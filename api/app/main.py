@@ -10,7 +10,7 @@ async def lifespan(app: FastAPI):
     yield
     app.state.rag.close()
 
-app = FastAPI(title="Clause AI APIs")
+app = FastAPI(title="Clause AI APIs", lifespan=lifespan)
 
 class AskQuestion(BaseModel):
     question: Annotated[
