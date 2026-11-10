@@ -1,23 +1,16 @@
-from fastapi import FastAPI
+from services.chat import RAGService
+
+def main()-> None:
+    rag_services = RAGService()
+    try:
+        query = input("You: ").strip()
+        result = rag_services.ask(query)
+        print(f"AI: {result.answer}")
+    except:
+        pass
+    finally:
+        rag_services.close()
 
 
-app = FastAPI(
-    title="Clause API",
-    description="Clause Shop RAG assistant API",
-    version="0.1.0",
-)
-
-
-@app.get("/")
-def root() -> dict[str, str]:
-    return {"message": "Welcome to Clause API", "docs": "/docs"}
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/hello")
-def hello(name: str = "World") -> dict[str, str]:
-    return {"message": f"Hello, {name}!"}
+if __name__ == "__main__":
+    main()
