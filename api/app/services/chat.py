@@ -2,7 +2,7 @@ from langchain.chat_models import init_chat_model
 from langchain_qdrant import QdrantVectorStore
 from pydantic import BaseModel
 
-from core.config import get_embeddings, get_qdrant_client, get_settings
+from app.core.config import get_embeddings, get_qdrant_client, get_settings
 
 NO_ANSWER = "I don't know. The handbook does not provide an answer to your question. Please ask a different question or contact support for assistance."
 
