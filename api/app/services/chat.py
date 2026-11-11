@@ -44,6 +44,7 @@ class RAGService():
         results = self.store.similarity_search_with_score(
             query=question,
             k=self.settings.top_k,
+            score_threshold=self.settings.score_threshold
         )
 
         if not results:

@@ -1,4 +1,4 @@
-from services.chat import RAGService
+from app.services.chat import RAGService
 
 def main()-> None:
     rag_services = RAGService()
