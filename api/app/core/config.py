@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     chat_provider: str = "ollama"
     chat_model: str = "gemma3:1b"
     chat_temperature: float = 0.1
+    chat_api_key: str=""
 
     # Embeddings
     embed_provider: str = "ollama"
@@ -45,9 +46,8 @@ class Settings(BaseSettings):
 
     # Prompts
     system_prompt: str = (
-        "You are a helpful Clause assistant. "
-        "Answer only from the provided context. "
-        "If the answer is not in the context, say you don't know."
+        "You are the Clause Shop assistant. Answer using ONLY the context provided with each question. Rules: 1. Use only facts written in the context. Never use outside knowledge, even if you know the answer. 2. Copy numbers, dates, names, prices and time limits exactly as they appear in the context. 3. Answer the question directly in one to three short sentences, without repeating the question or the context. 4. If the context does not clearly contain the answer, reply exactly: I don't know. The handbook does not provide an answer to your question. 5. Do not guess, do not combine unrelated details, and do not add advice that is not in the context."
+
     )
 
 

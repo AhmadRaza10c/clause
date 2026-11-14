@@ -53,7 +53,8 @@ class RAGService():
         context = "\n\n".join(doc.page_content for doc, _ in results)
         messages = [
             {"role": "system", "content": self.settings.system_prompt},
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion:\n{question}"},
+            # {"role": "user", "content": f"Context:\n{context}\n\nQuestion:\n{question}"},
+            {"role": "user", "content": f"Handbook text:\n{context}\n\nCustomer Question:\n{question}"},
         ]
 
         return Answer(

@@ -1,0 +1,46 @@
+Log Table
+v1 - baseline
+- chunk size = 600, chunk overlap = 100
+- embedding model: nomic-embed-text:latest
+- top_k = 3, temp = 0.1,
+- model = gemma3:1b, system prompt = simple
+
+Retrieval hit rate (page): 88%
+Fact in chunks (stricter):  100%
+Answer correctness:         56%
+Refusal rate:               75%
+Leak rate:                  50%
+
+---
+v2 -
+Run A: System Prompt
+
+Retrieval hit rate (page): 88%
+Fact in chunks (stricter):  100%
+Answer correctness:         50%
+Refusal rate:               100%
+Leak rate:                  100%
+---
+v3
+Run B: gemma3:4b
+---
+v3
+Run c:  temp = 0
+
+Retrieval hit rate (page): 88%
+Fact in chunks (stricter):  100%
+Answer correctness:         50%
+Refusal rate:               100%
+Leak rate:                  100%
+---
+v5
+Run D: tok_k = 3
+---
+v6
+leak rate --- staff ? ingestion.py
+
+Retrieval hit rate (page): 100%
+Fact in chunks (stricter):  100%
+Answer correctness:         50%
+Refusal rate:               100%
+Leak rate:                  0%
