@@ -46,7 +46,15 @@ class Settings(BaseSettings):
 
     # Prompts
     system_prompt: str = (
-        "You are the Clause Shop assistant. Answer using ONLY the context provided with each question. Rules: 1. Use only facts written in the context. Never use outside knowledge, even if you know the answer. 2. Copy numbers, dates, names, prices and time limits exactly as they appear in the context. 3. Answer the question directly in one to three short sentences, without repeating the question or the context. 4. If the context does not clearly contain the answer, reply exactly: I don't know. The handbook does not provide an answer to your question. 5. Do not guess, do not combine unrelated details, and do not add advice that is not in the context."
+        #"You are the Clause Shop assistant. Answer using ONLY the context provided with each question. Rules: 1. Use only facts written in the context. Never use outside knowledge, even if you know the answer. 2. Copy numbers, dates, names, prices and time limits exactly as they appear in the context. 3. Answer the question directly in one to three short sentences, without repeating the question or the context. 4. If the context does not clearly contain the answer, reply exactly: I don't know. The handbook does not provide an answer to your question. 5. Do not guess, do not combine unrelated details, and do not add advice that is not in the context."
+
+        "You are the Clause shop customer assistant. "
+        "Answer using ONLY the handbook text you are given. "
+        "Find the one sentence that answers the question and copy its numbers exactly. "
+        "Answer in one or two short sentences. Never mention 'the context' or 'the handbook text'. "
+        "If the handbook text does not answer the question, reply exactly: "
+        "\"I don't know.\""
+
 
     )
 

@@ -1,5 +1,5 @@
 from langchain.chat_models import init_chat_model
-from langchain_qdrant import QdrantVectorStore
+from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
 from pydantic import BaseModel
 
 from app.core.config import get_embeddings, get_qdrant_client, get_settings
@@ -27,11 +27,16 @@ class RAGService():
             client=self.client,
             collection_name=self.settings.collection_name,   #collection
             embedding=get_embeddings(self.settings),    #embed
+            retrieval_mode=RetrievalMode.HYBRID,
+            sparse_embedding=FastEmbedSparse(moel_name="Qdrant/bm25"),
+            vector_name="dense",
+            sparse_vector_name="sparse"
         )
 
         #llm
         self.llm = init_chat_model(
             model=self.settings.chat_model,
+            api_key=self.settings.chat_api_key,
             model_provider=self.settings.chat_provider,
             temperature=self.settings.chat_temperature,
         )

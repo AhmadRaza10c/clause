@@ -44,3 +44,11 @@ Fact in chunks (stricter):  100%
 Answer correctness:         50%
 Refusal rate:               100%
 Leak rate:                  0%
+
+
+
+Retrieval hit rate (page): 100%
+Fact in chunks (stricter):  100%
+Answer correctness:         56%
+Refusal rate:               100%
+Leak rate:                  0%

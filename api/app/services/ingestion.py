@@ -4,9 +4,9 @@ import re
 # from pypdf import PdfReader
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
-from langchain_qdrant import QdrantVectorStore
+from langchain_qdrant import QdrantVectorStore, RetrievalMode, FastEmbedSparse
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from qdrant_client.models import Distance, VectorParams
+from qdrant_client.models import Distance, VectorParams, SparseVectorParams
 
 from app.core.config import get_embeddings, get_qdrant_client, get_settings
 
@@ -57,15 +57,18 @@ def ingest(path: str | None = None) -> int:
 
         client.create_collection(
             collection_name=settings.collection_name,
-            vectors_config=VectorParams(
-                size=settings.embed_dim, distance=Distance.COSINE
-            ),
+            vectors_config={"dense":VectorParams(size=settings.embed_dim, distance=Distance.COSINE)},
+            sparse_vectors_config={"sparse": SparseVectorParams()}
         )
 
         vector_store = QdrantVectorStore(
             client=client,
             collection_name=settings.collection_name,
             embedding=embed,
+            retrieval_mode=RetrievalMode.HYBRID,
+            sparse_embedding=FastEmbedSparse(moel_name="Qdrant/bm25"),
+            vector_name="dense",
+            sparse_vector_name="sparse"
         )
         vector_store.add_documents(chunks)
     finally:

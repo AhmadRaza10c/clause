@@ -6,7 +6,11 @@ def main()-> None:
         query = input("You: ").strip()
         result = rag_services.ask(query)
         print(f"AI: {result.answer}")
-    except:
+        if result.sources:
+            print("sources: ")
+            for s in result.sources:
+                print(f"-- {s.source}, page: {s.page}, source: {s.score}")
+    except (KeyboardInterrupt, EOFError):
         pass
     finally:
         rag_services.close()
