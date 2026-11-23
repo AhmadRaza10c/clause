@@ -1,76 +1,68 @@
+import sqlite3
+from uuid import uuid4
+
 from langchain.agents import create_agent
-from langchain.messages import HumanMessage, ToolMessage
-from langchain.tools import tool
-from pydantic import BaseModel
+from langchain.messages import AIMessage, HumanMessage, ToolMessage
+from langgraph.checkpoint.sqlite import SqliteSaver
+
+from app.schemas import AgentReply, Source, ToolCall
 from app.core.config import get_settings
 from app.prompts.loader import get_prompt
 from app.llm.models import get_chat_model
-from app.rag.vector_store import get_vector_store
+from app.rag.vectorstore import get_vector_store
+from app.tools.knowledge.handbook import file_search
+from app.middleware.stacks import default_stack
 
 
-class Source(BaseModel):
-    source: str
-    page: int | None = None
-    score: float
-
-
-class Answer(BaseModel):
-    answer: str
-    sources: list[Source]
-
+conn = sqlite3.connect("memory.db", check_same_thread=False)
+checkpointer = SqliteSaver(conn)
 
 class ClauseAgent:
-    def __init__(self) -> None:
+    def __init__(self):
         self.settings = get_settings()
-        self.store = get_vector_store(self.settings)
-
-        @tool(response_format="content_and_artifact")
-        def search_handbook(question: str):
-            """Search the Clause shop handbook: refunds, delivery times and fees,
-            payments, cash on delivery, warranty, exchanges, tracking, loyalty, support hours.
-            Use a short query like "refund window electronics"."""
-            results = self.store.similarity_search_with_score(
-                query=question,
-                k=self.settings.top_k,
-            )
-            if not results:
-                return "Nothing found.", []
-
-            texts = []
-            sources = []
-            for doc, score in results:
-                texts.append(doc.page_content)
-                sources.append(
-                    Source(
-                        source=doc.metadata.get("source", "unknown"),
-                        page=doc.metadata.get("page"),
-                        score=round(score, 4),
-                    )
-                )
-
-            combined_text = "\n\n".join(texts)
-            return combined_text, sources
+        self.store = get_vector_store(settings=self.settings)
 
         self.agent = create_agent(
-            model=get_chat_model(self.settings),
-            tools=[search_handbook],
+            model=get_chat_model(settings=self.settings),
+            tools=[
+                file_search(store=self.store, top_k=self.settings.top_k),
+            ],
             system_prompt=get_prompt(
                 name="support/system",
-                version=self.settings.system_prompt_version,
+                version=self.settings.system_prompt_version
             ),
+            middleware=default_stack(self.settings),
+            checkpointer=checkpointer
         )
 
-    def ask(self, question: str) -> Answer:
-        result = self.agent.invoke({"messages": [HumanMessage(question)]})
+    def ask(self, question: str, thread_id: str | None = None) -> AgentReply:
+        thread_id = thread_id or str(uuid4())   # no id = new conversation
+
+        result = self.agent.invoke(
+            {"messages": [HumanMessage(question)]},
+            config={"configurable": {"thread_id": thread_id}}
+        )
         messages = result["messages"]
 
-        sources: list[Source] = []
-        for msg in messages:
-            if isinstance(msg, ToolMessage) and isinstance(msg.artifact, list):
-                sources.extend(msg.artifact)
+        tool_calls: list[ToolCall] = []  # tools the LLM chose to call
+        sources: list[Source] = []       # chunks those tools returned
+        for message in messages:
+            # 1. The LLM asked for a tool -> record name + args
+            if isinstance(message, AIMessage):
+                tool_calls.extend(
+                    ToolCall(name=call["name"], args=call["args"]) for call in message.tool_calls
+                )
 
-        return Answer(answer=messages[-1].text, sources=sources)
+            # 2. The tool answered -> collect its sources (the artifact)
+            if isinstance(message, ToolMessage) and message.artifact:
+                sources.extend(message.artifact)
 
-    def close(self) -> None:
-        if hasattr(self.store, "client") and hasattr(self.store.client, "close"):
-            self.store.client.close()
+        return AgentReply(
+            answer=messages[-1].text,
+            thread_id=thread_id,
+            tool_calls=tool_calls,
+            sources=sources,
+        )
+
+    def close(self):
+        self.store.client.close()
