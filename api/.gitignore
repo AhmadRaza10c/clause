@@ -7,10 +7,20 @@
 __pycache__/
 *.py[oc]
 .ipynb_checkpoints/
+<<<<<<< HEAD
+
+# Secrets
+.env
+
+# Node (web)
+node_modules/
+.next/
+/notebooks/
+/playground/
+=======
 .venv/
 
 # Secrets
 .env
 .venv
-.env.example
-vector_stores/
+>>>>>>> 2499da7 (make api end point)

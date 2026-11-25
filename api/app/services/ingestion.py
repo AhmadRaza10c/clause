@@ -1,25 +1,18 @@
 from pathlib import Path
-import re
+
+from core.config import get_embeddings, get_qdrant_client, get_settings
 
 # from pypdf import PdfReader
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
-from langchain_qdrant import QdrantVectorStore, RetrievalMode, FastEmbedSparse
+from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from qdrant_client.models import Distance, VectorParams, SparseVectorParams
+from qdrant_client.models import Distance, VectorParams
 
-from app.core.config import get_embeddings, get_qdrant_client, get_settings
-
-
-# def load(path: Path) -> list[Document]:
-#     return PyPDFLoader(path).load()
-STAFF_ONLY = re.compile(r"\n?\d+\.[^\n]*\(staff only\).*?(?=\n\d+\. |\Z)", re.S)
 
 def load(path: Path) -> list[Document]:
-    docs = PyPDFLoader(path).load()
-    for doc in docs:
-        doc.page_content = STAFF_ONLY.sub("", doc.page_content)
-    return docs
+    return PyPDFLoader(path).load()
+
 
 def ingest(path: str | None = None) -> int:
     settings = get_settings()
@@ -57,29 +50,18 @@ def ingest(path: str | None = None) -> int:
 
         client.create_collection(
             collection_name=settings.collection_name,
-            vectors_config={"dense":VectorParams(size=settings.embed_dim, distance=Distance.COSINE)},
-            sparse_vectors_config={"sparse": SparseVectorParams()}
+            vectors_config=VectorParams(
+                size=settings.embed_dim, distance=Distance.COSINE
+            ),
         )
 
         vector_store = QdrantVectorStore(
             client=client,
             collection_name=settings.collection_name,
             embedding=embed,
-            retrieval_mode=RetrievalMode.HYBRID,
-            sparse_embedding=FastEmbedSparse(moel_name="Qdrant/bm25"),
-            vector_name="dense",
-            sparse_vector_name="sparse"
         )
         vector_store.add_documents(chunks)
     finally:
         client.close()
 
     return len(chunks)
-
-
-if __name__ == "__main__":
-    print(ingest(), "chunks indexed!")
-
-# this is how to run ingestion pipeline
-# cd api
-# uv run python -m app.services.ingestion
