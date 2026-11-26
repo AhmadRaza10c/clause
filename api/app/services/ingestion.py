@@ -1,18 +1,18 @@
 from pathlib import Path
 
-from core.config import get_embeddings, get_qdrant_client, get_settings
-
 # from pypdf import PdfReader
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
-from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from qdrant_client.models import Distance, VectorParams
+from langchain_qdrant import QdrantVectorStore, RetrievalMode, FastEmbedSparse
+from qdrant_client.models import Distance, VectorParams, SparseVectorParams
+
+from app.core.config import get_embeddings, get_qdrant_client, get_settings
+from app.rag.cleaning import remove_internal
 
 
 def load(path: Path) -> list[Document]:
     return PyPDFLoader(path).load()
-
 
 def ingest(path: str | None = None) -> int:
     settings = get_settings()
@@ -20,6 +20,10 @@ def ingest(path: str | None = None) -> int:
     # 1. Load
     file = Path(path or settings.data_path)
     documents = load(file)
+
+    # Clean: drop staff-only sections before anything is indexed
+    for doc in documents:
+        doc.page_content = remove_internal(doc.page_content)
 
     # 2. Chunk
     text_splitter = RecursiveCharacterTextSplitter(
@@ -50,18 +54,28 @@ def ingest(path: str | None = None) -> int:
 
         client.create_collection(
             collection_name=settings.collection_name,
-            vectors_config=VectorParams(
-                size=settings.embed_dim, distance=Distance.COSINE
-            ),
+            vectors_config={"dense": VectorParams(size=settings.embed_dim, distance=Distance.COSINE)},
+            sparse_vectors_config={"sparse": SparseVectorParams()}
         )
 
         vector_store = QdrantVectorStore(
             client=client,
             collection_name=settings.collection_name,
             embedding=embed,
+            sparse_embedding=FastEmbedSparse(model_name="Qdrant/bm25"),
+            retrieval_mode=RetrievalMode.HYBRID,
+            vector_name="dense",
+            sparse_vector_name="sparse"
         )
         vector_store.add_documents(chunks)
     finally:
         client.close()
 
     return len(chunks)
+
+
+if __name__ == "__main__":
+    print(ingest(), "chunks indexed")
+
+# cd api
+# uv run python -m app.services.ingestion
