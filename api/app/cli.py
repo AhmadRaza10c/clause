@@ -4,12 +4,14 @@ from app.services.agent import ClauseAgent
 def main():
     clause_agent = ClauseAgent()
     try:
+        thread_id = None
         while True:
             question = input("You: ").strip()
             if not question:
                 continue
 
-            reply = clause_agent.ask(question)
+            reply = clause_agent.ask(question, thread_id)
+            thread_id = reply.thread_id
 
             print(f"AI: {reply.answer}")
             print(f"--- searched: {reply.searches}")
